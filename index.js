@@ -12,7 +12,8 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer')
 const storage = multer.diskStorage({});
 const upload = multer({ storage: storage });
-
+const jwt = require("jsonwebtoken");
+require("dotenv").config()
 cloudinary.config({
     cloud_name: 'dj7z2d6lv',
     api_key: '775228647313376',
@@ -20,6 +21,24 @@ cloudinary.config({
 });
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.1u9t2.mongodb.net/?retryWrites=true&w=majority`;
+
+const tokenVerify = (req, res, next) => {
+
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return res.status(401).send({ error: true, message: "Authorizaion Denied." })
+    }
+    const token = authorization.split(" ")[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN, (error, decoded) => {
+        if (error) {
+            return res.status(403).send({ error: true, message: "Unauthorized access." })
+        }
+        req.decoded = decoded;
+        next()
+    })
+}
+
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -38,15 +57,19 @@ async function run() {
         const cartCollection = client.db("muscleDb").collection("cart");
         const classesCollection = client.db("muscleDb").collection("classes");
         const userCollection = client.db("muscleDb").collection("users")
+
+
+
         //carts collection
-        app.get('/carts', async (req, res) => {
-            const result = await cartCollection.find().toArray();
+        app.get('/carts/:email', async (req, res) => {
+            const { email } = req.params;
+            const query = { email }
+            const result = await cartCollection.find(query).toArray();
             res.send(result)
         })
 
         app.post("/carts", async (req, res) => {
             const cartInfo = req.body;
-
             const result = await cartCollection.insertOne(cartInfo);
             res.send(result)
         })
@@ -108,13 +131,20 @@ async function run() {
         });
         //classes collection
 
-        app.get("/classes", async (req, res) => {
+        app.get("/classes", tokenVerify, async (req, res) => {
             try {
                 const email = req.query.email;
+                const decodedEmail = req.decoded.email;
+
 
                 if (email) {
+
+                    if (email !== decodedEmail) {
+                        return res.status(403).send({ error: true, message: "Unauthenticatin request." })
+                    }
                     const query = { instructorEmail: email }
                     const result = await classesCollection.find(query).toArray();
+
                     res.send(result)
                 } else {
                     const result = await classesCollection.find().toArray();
@@ -169,7 +199,7 @@ async function run() {
         app.put("/users/:id", async (req, res) => {
             const roleinfo = req.body;
             const id = req.params.id;
-            console.log(roleinfo);
+
             const filter = { _id: new ObjectId(id) }
 
             const updateDoc = {
@@ -180,6 +210,53 @@ async function run() {
             const options = { upsert: true };
             const result = await userCollection.updateOne(filter, updateDoc, options);
             res.send(result)
+        })
+
+        //admin pannel
+        //verify admin
+
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.params.email;
+            const query = { email };
+            const user = await userCollection.findOne(query)
+            if (user?.role !== "admin") {
+                return res.status(403).send({ error: true, message: "forbidden access" })
+            }
+            req.role = user.role;
+            next()
+        }
+
+        //check admin
+        app.get("/users/type/:email", tokenVerify, async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await userCollection.findOne(query);
+            let result;
+            if (user?.role === "admin") {
+
+                result = { admin: user?.role === 'admin', instructor: false }
+            }
+            else if (user?.role !== "admin") {
+                result = { instructor: user?.role === "instructor", admin: false }
+            }
+            res.send(result)
+        })
+        // app.get("/users/admin/:email", async (req, res) => {
+        //     const email = req.params.email;
+        //     const query = { email }
+        //     const user = await userCollection.findOne(query);
+        //     const result = { admin: user?.role === 'admin' }
+        //     console.log(result);
+        //     res.send(result)
+        // })
+
+
+        app.post("/jwt", async (req, res) => {
+            const email = req.body;
+
+            const token = jwt.sign(email, process.env.ACCESS_TOKEN, { expiresIn: "2d" })
+            res.send({ token: token })
+
         })
 
         // Send a ping to confirm a successful connection
