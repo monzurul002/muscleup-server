@@ -73,6 +73,7 @@ async function run() {
             const result = await cartCollection.insertOne(cartInfo);
             res.send(result)
         })
+
         //class delte from class
 
         app.delete("/carts/:id", async (req, res) => {
@@ -83,8 +84,6 @@ async function run() {
             res.send(result)
 
         })
-
-
 
         //classes end point & image upload
         // app.post("/classes", upload.single("image"), async (req, res) => {
@@ -155,6 +154,12 @@ async function run() {
                 res.status(500).send("Internal Server Error");
             }
         });
+        app.get("/classes/:id", async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: new ObjectId(id) }
+            const result = await classesCollection.findOne(filter);
+            res.send(result)
+        })
 
         app.put('/classes/:id', async (req, res) => {
             const id = req.params.id;
@@ -180,6 +185,14 @@ async function run() {
             res.send(result)
 
         })
+
+        app.delete("/classes/:id", async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: new ObjectId(id) };
+            const result = await classesCollection.deleteOne(filter);
+            res.send(result)
+        })
+
 
         //users collection
         app.post("/users", async (req, res) => {
@@ -263,6 +276,9 @@ async function run() {
             res.send(result)
         })
 
+
+
+
         //jwt
         app.post("/jwt", async (req, res) => {
             const email = req.body;
@@ -272,6 +288,12 @@ async function run() {
 
         })
 
+        //courses
+
+        app.get("/courses", async (req, res) => {
+            const result = await classesCollection.find().toArray()
+            res.send(result)
+        })
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
