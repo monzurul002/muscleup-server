@@ -52,12 +52,12 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
+        await client.connect();
 
         const cartCollection = client.db("muscleDb").collection("cart");
         const classesCollection = client.db("muscleDb").collection("classes");
         const userCollection = client.db("muscleDb").collection("users")
-
+        const instructorsCollection = client.db("muscleDb").collection("instructors")
 
 
         //carts collection
@@ -250,7 +250,20 @@ async function run() {
         //     res.send(result)
         // })
 
+        //instructor
+        app.get("/instructors", async (req, res) => {
+            const result = await instructorsCollection.find().toArray()
+            res.send(result)
+        })
+        //single instructor
+        app.get("/instructor/:id", async (req, res) => {
+            const { id } = req.params;
+            const filter = { _id: new ObjectId(id) }
+            const result = await instructorsCollection.findOne(filter);
+            res.send(result)
+        })
 
+        //jwt
         app.post("/jwt", async (req, res) => {
             const email = req.body;
 
