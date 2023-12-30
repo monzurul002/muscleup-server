@@ -70,6 +70,7 @@ async function run() {
 
         app.post("/carts", async (req, res) => {
             const cartInfo = req.body;
+
             const result = await cartCollection.insertOne(cartInfo);
             res.send(result)
         })
@@ -162,7 +163,7 @@ async function run() {
         })
 
         app.put('/classes/:id', async (req, res) => {
-            const id = req.params.id;
+            const { id } = req.params;
             const updateStatus = req.body;
             let updateDoc;
             const query = { _id: new ObjectId(id) }
@@ -206,6 +207,13 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result)
         })
+        //specific user
+        app.get("/users/:email", async (req, res) => {
+            const email = req.params.email;
+            const result = await userCollection.findOne({ email });
+            res.send(result)
+        })
+
 
         //make Admin or instructor
 
@@ -244,16 +252,34 @@ async function run() {
             const email = req.params.email;
             const query = { email }
             const user = await userCollection.findOne(query);
+
             let result;
             if (user?.role === "admin") {
 
                 result = { admin: user?.role === 'admin', instructor: false }
             }
             else if (user?.role !== "admin") {
+
                 result = { instructor: user?.role === "instructor", admin: false }
             }
             res.send(result)
         })
+
+        app.put("/users/email/:email", async (req, res) => {
+            const email = req.params.email;
+            const updateInfo = req.body;
+            const filter = { email };
+            const options = {
+                upsert: true
+            }
+            const updateDoc = {
+                $set: updateInfo
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
+        })
+
+
         // app.get("/users/admin/:email", async (req, res) => {
         //     const email = req.params.email;
         //     const query = { email }
