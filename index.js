@@ -3,7 +3,7 @@ const express = require("express");
 const app = express()
 const cors = require("cors")
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '50mb' }))
 const port = process.env.PORT || 5000
 require("dotenv").config()
 const { config } = require("dotenv");
@@ -58,7 +58,7 @@ async function run() {
         const classesCollection = client.db("muscleDb").collection("classes");
         const userCollection = client.db("muscleDb").collection("users")
         const instructorsCollection = client.db("muscleDb").collection("instructors")
-
+        const blogsCollection = client.db("muscleDb").collection("blogs")
 
         //carts collection
         app.get('/carts/:email', async (req, res) => {
@@ -276,6 +276,19 @@ async function run() {
                 $set: updateInfo
             }
             const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
+        })
+
+        //blogs
+        app.post("/blogs", async (req, res) => {
+            const blogs = req.body;
+
+            const result = await blogsCollection.insertOne({ blogs })
+            res.send(result)
+        })
+
+        app.get("/blogs", async (req, res) => {
+            const result = await blogsCollection.find().toArray();
             res.send(result)
         })
 
