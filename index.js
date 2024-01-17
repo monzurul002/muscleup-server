@@ -75,34 +75,18 @@ async function run() {
             res.send(result)
         })
 
-        //class delte from class
+        //class delte from cart
 
         app.delete("/carts/:id", async (req, res) => {
             const id = req.params.id;
 
             const filter = { _id: new ObjectId(id) }
-            const result = await cartCollection.deleteOne(filter)
+            const result = await cartCollection.deleteOne(filter);
+
             res.send(result)
 
         })
 
-        //classes end point & image upload
-        // app.post("/classes", upload.single("image"), async (req, res) => {
-        //     try {
-        //         const classesInfo = req.body;
-        //         const image = req.file;
-        //         console.log(image);
-        //         const result = await cloudinary.uploader.upload(image.buffer);
-        //         console.log(result);
-
-        //         // const result = await classesCollection.insertOne(classesInfo);
-        //         // res.send(result)
-        //     }
-        //     catch (error) {
-        //         console.log(error);
-        //     }
-
-        // })
         app.post("/classes", upload.single("image"), async (req, res) => {
             try {
                 const image = req.file;
@@ -258,6 +242,7 @@ async function run() {
 
                 result = { admin: user?.role === 'admin', instructor: false }
             }
+
             else if (user?.role !== "admin") {
 
                 result = { instructor: user?.role === "instructor", admin: false }
